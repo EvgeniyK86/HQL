@@ -1,0 +1,78 @@
+create schema schema;
+
+
+create table schema.user
+(
+    id         serial primary key,
+    firstname  varchar(128),
+    lastname   varchar(128),
+    company_id int references company (id)
+
+);
+create table schema.company
+(
+    id   serial primary key,
+    name varchar(128)
+);
+create table schema.payment
+(
+    id          serial primary key,
+    amount      int,
+    receiver_id int references schema.user (id)
+);
+insert into schema.company (name)
+values ('Microsoft'),
+       ('Apple'),
+       ('Google');
+insert into schema.user (firstname, lastname, company_id)
+values ('Bil', 'Gates', 1),
+       ('Steve', 'Jobs', 2),
+       ('Sergey', 'Brin', 3),
+       ('Tim', 'Cook', 2),
+       ('Diane', 'Greene', 3);
+insert into schema.payment (amount, receiver_id)
+values (100, 1),
+       (300, 1),
+       (500, 1),
+       (250, 2),
+       (500, 2),
+       (600, 2),
+       (400, 4),
+       (300, 4),
+       (500, 3),
+       (500, 3),
+       (500, 3),
+       (300, 5),
+       (300, 5),
+       (300, 5);
+
+select avg(p.amount)
+from schema.payment p
+         join schema.user u on u.id = p.receiver_id
+group by u.id
+having u.firstname = 'Bil';
+
+select p
+from schema.payment p
+         join schema.user u on u.id = p.receiver_id
+where u.company_id = 2
+order by u.firstname, p.amount;
+
+select c.name,
+       avg(p.amount)
+from schema.company c
+    join schema.user u on c.id = u.company_id
+    join schema.payment p on u.id = p.receiver_id
+group by u.company_id, c.name
+order by c.name;
+
+select u, avg(p.amount) from schema.user u
+join schema.payment p on u.id = p.receiver_id
+group by u.id having (avg(p.amount))>(select avg(p.amount) from schema.payment p)
+order by (u.firstname)
+
+
+
+
+
+

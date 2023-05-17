@@ -70,10 +70,10 @@ public class UserDao {
     public List<Payment> findAllPaymentsByCompanyName(Session session, String companyName) {
 
         return session.createQuery("select p from Payment p " +
-                        "full join User u on p.receiver.id = u.id " +
+                        "join User u on u.id = p.receiver.id " +
                         "where u.company.name=:company " +
                         "order by u.personalInfo.firstname, " +
-                        "u.payments.size", Payment.class)
+                        "p.amount", Payment.class)
                 .setParameter("company", companyName)
                 .list();
 
@@ -85,8 +85,9 @@ public class UserDao {
     public Double findAveragePaymentAmountByFirstAndLastNames(Session session, PaymentFilter filter) {
 
         List<Double> list = session.createQuery("select avg (p.amount) from Payment p" +
-                        " join User u on p.receiver.id = u.id " +
-                        "where u.personalInfo.firstname=:firstname " +
+                        " join User u on u.id = p.receiver.id " +
+                        "group by u.id " +
+                        "having u.personalInfo.firstname=:firstname " +
                         "and u.personalInfo.lastname=:lastname", Double.class)
                 .setParameter("firstname", filter.getFirstname())
                 .setParameter("lastname", filter.getLastname())
@@ -99,8 +100,9 @@ public class UserDao {
      */
     public List<Tuple> findCompanyNamesWithAvgUserPaymentsOrderedByCompanyName(Session session) {
         return session.createQuery("select c.name, " +
-                "(select avg (p.amount) from Payment p " +
-                "join  User u on p.receiver.id = u.id) from  Company c " +
+                "avg (p.amount) from Company c " +
+                "join  User u on c.id = u.company.id " +
+                "join Payment p on u.id = p.receiver.id " +
                 "group by c.name " +
                 "order by c.name", Tuple.class).list();
     }
@@ -111,8 +113,11 @@ public class UserDao {
      * Упорядочить по имени сотрудника
      */
     public List<Tuple> isItPossible(Session session) {
-
-        return null;
+        return session.createQuery("select u, avg(p.amount) from User u " +
+                "join Payment  p on u.id = p.receiver.id " +
+                "group by u.id " +
+                "having (avg(p.amount))>(select avg(p.amoumt) from Payment p) " +
+                "order by u.personalInfo.firstname", Tuple.class).list();
     }
 
     public static UserDao getInstance() {
